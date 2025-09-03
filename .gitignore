@@ -1,0 +1,57 @@
+# Node modules
+node_modules/
+
+# Package lock files    
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# dotenv environment variables
+.env
+.env.* # like .env.local, .env.development
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# IDEs & Editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+coverage/
+.next/
+out/
+tmp/
+temp/
+
+# Optional: TypeScript
+*.tsbuildinfo
+
+# Optional: test coverage
+coverage/
+
+# Optional: local development files
+*.local
+
+# Optional: Firebase
+.firebase/
+.firebaserc
+
+# Optional: Docker
+docker-compose.override.yml
+
+# Misc
+*.tgz
+*.swp

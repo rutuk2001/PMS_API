@@ -12,10 +12,9 @@ exports.registerPatient = async (req, res, next) => {
       address,
       email,
       phone_number,
-      healthIssues,
+      health_issues_initial,
       customHealthIssue,
       blood_group,
-      symptoms_or_reason,
       country,
       state,
       city,
@@ -43,10 +42,9 @@ exports.registerPatient = async (req, res, next) => {
       state: joi.string().required(),
       city: joi.string().required(),
       phone_number: joi.number().required(),
-      healthIssues: healthIssuesSchema,
+      health_issues_initial: healthIssuesSchema,
       customHealthIssue: joi.string().allow(""),
       blood_group: joi.string().required(),
-      symptoms_or_reason: joi.string().required(),
     });
 
     const result = validationSchema.validate(req.body);
@@ -59,7 +57,7 @@ exports.registerPatient = async (req, res, next) => {
     }
 
     // Check if "Other" is selected in healthIssues and customHealthIssue is provided
-    const isOtherHealthIssueSelected = healthIssues.some(
+    const isOtherHealthIssueSelected = health_issues_initial.some(
       (issue) => issue.label === "Other"
     );
     if (isOtherHealthIssueSelected && !customHealthIssue) {
@@ -83,7 +81,7 @@ exports.registerPatient = async (req, res, next) => {
     const unique_patient_id = `PAT-${Math.floor(1000 + Math.random() * 9000)}`;
 
     // Create new patient document
-    await newPatientModel.create({
+    const newPatient = await newPatientModel.create({
       unique_patient_id,
       first_name,
       last_name,
@@ -96,13 +94,16 @@ exports.registerPatient = async (req, res, next) => {
       city,
       phone_number,
       email,
-      healthIssues,
       customHealthIssue: isOtherHealthIssueSelected ? customHealthIssue : "",
       blood_group,
-      symptoms_or_reason,
     });
 
-    responseHandler.generateSuccess(res, "Registered successfully", null, 201);
+    responseHandler.generateSuccess(
+      res,
+      "Registered successfully",
+      { _id: newPatient._id },
+      201
+    );
   } catch (err) {
     next(err);
   }
@@ -115,7 +116,7 @@ exports.getAllPatients = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const [allPatients, total] = await Promise.all([
-      newPatientModel.find().skip(skip).limit(limit),
+      newPatientModel.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
       newPatientModel.countDocuments(),
     ]);
 
@@ -138,7 +139,7 @@ exports.getPatient = async (req, res, next) => {
   try {
     const patientId = req.params.id;
     const patient = await newPatientModel.findOne({
-      unique_patient_id: patientId,
+      _id: patientId,
     });
 
     if (!patient) {
