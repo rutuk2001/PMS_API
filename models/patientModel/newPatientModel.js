@@ -51,7 +51,7 @@ const patientSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
-    healthIssues: {
+    health_issues_initial: {
       type: [
         {
           label: String,
@@ -66,10 +66,6 @@ const patientSchema = new mongoose.Schema(
       required: false,
     },
     blood_group: {
-      type: String,
-      required: true,
-    },
-    symptoms_or_reason: {
       type: String,
       required: true,
     },
