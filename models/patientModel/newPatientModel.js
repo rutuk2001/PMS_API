@@ -25,7 +25,7 @@ const patientSchema = new mongoose.Schema(
     },
     phone_number: {
       type: Number,
-      required: true,
+      required: false,
     },
     location: {
       type: String,
@@ -37,15 +37,15 @@ const patientSchema = new mongoose.Schema(
     },
     country: {
       type: String,
-      required: true,
+      required: false,
     },
     state: {
       type: String,
-      required: true,
+      required: false,
     },
     city: {
       type: String,
-      required: true,
+      required: false,
     },
     email: {
       type: String,
@@ -58,7 +58,7 @@ const patientSchema = new mongoose.Schema(
           group: String,
         },
       ],
-      required: true,
+      required: false,
     },
     customHealthIssue: {
       type: String,
@@ -67,7 +67,7 @@ const patientSchema = new mongoose.Schema(
     },
     blood_group: {
       type: String,
-      required: true,
+      required: false,
     },
   },
   { timestamps: true }

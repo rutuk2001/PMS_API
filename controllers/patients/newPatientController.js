@@ -21,30 +21,28 @@ exports.registerPatient = async (req, res, next) => {
     } = req.body;
 
     // Validate healthIssues array
-    const healthIssuesSchema = joi
-      .array()
-      .items(
-        joi.object().keys({
-          label: joi.string().required(),
-          group: joi.string().required(),
-        })
-      )
-      .required();
-
     const validationSchema = joi.object().keys({
       first_name: joi.string().required(),
       last_name: joi.string().required(),
       gender: joi.string().required(),
       age: joi.number().required(),
       location: joi.string().required(),
-      address: joi.string().required(),
-      country: joi.string().required(),
-      state: joi.string().required(),
-      city: joi.string().required(),
-      phone_number: joi.number().required(),
-      health_issues_initial: healthIssuesSchema,
-      customHealthIssue: joi.string().allow(""),
-      blood_group: joi.string().required(),
+      address: joi.string().allow("").optional(),
+      country: joi.string().allow("").optional(),
+      state: joi.string().allow("").optional(),
+      city: joi.string().allow("").optional(),
+      phone_number: joi.alternatives().try(joi.string().allow(""), joi.number()).optional(),
+      health_issues_initial: joi
+        .array()
+        .items(
+          joi.object().keys({
+            label: joi.string().required(),
+            group: joi.string().required(),
+          })
+        )
+        .optional(),
+      customHealthIssue: joi.string().allow("").optional(),
+      blood_group: joi.string().allow("").optional(),
     });
 
     const result = validationSchema.validate(req.body);
@@ -56,29 +54,24 @@ exports.registerPatient = async (req, res, next) => {
       );
     }
 
-    // Check if "Other" is selected in healthIssues and customHealthIssue is provided
-    const isOtherHealthIssueSelected = health_issues_initial.some(
-      (issue) => issue.label === "Other"
-    );
-    if (isOtherHealthIssueSelected && !customHealthIssue) {
-      return responseHandler.generateError(
-        res,
-        "Please provide a custom health issue as 'Other' was selected.",
-        null
-      );
-    }
-
+    const normalizedHealthIssues = Array.isArray(health_issues_initial)
+      ? health_issues_initial
+      : [];
     // Check if the phone number already exists
-    const existingPatient = await newPatientModel.findOne({ phone_number });
-    if (existingPatient) {
-      return responseHandler.generateError(
-        res,
-        "This phone number is already associated with a registered patient."
-      );
-    }
+    // const existingPatient = await newPatientModel.findOne({ phone_number });
+    // if (existingPatient) {
+    //   return responseHandler.generateError(
+    //     res,
+    //     "This phone number is already associated with a registered patient."
+    //   );
+    // }
 
     // Generate a unique patient ID
     const unique_patient_id = `PAT-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const isOtherHealthIssueSelected = normalizedHealthIssues.some(
+      (issue) => issue.label === "Other"
+    );
 
     // Create new patient document
     const newPatient = await newPatientModel.create({
@@ -94,6 +87,7 @@ exports.registerPatient = async (req, res, next) => {
       city,
       phone_number,
       email,
+      health_issues_initial: normalizedHealthIssues,
       customHealthIssue: isOtherHealthIssueSelected ? customHealthIssue : "",
       blood_group,
     });
@@ -162,7 +156,7 @@ exports.updatePatient = async (req, res, next) => {
 
   try {
     await newPatientModel.updateOne(
-      { unique_patient_id: req.params.id },
+      { _id: req.params.id },
       { $set: updatedData }
     );
 
