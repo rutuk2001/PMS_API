@@ -15,9 +15,11 @@ exports.addPrescriptionToVisit = async (req, res, next) => {
       symptoms_or_reason,
     } = req.body;
 
+    const prescriber = (prescribed_by || "").trim() || "Dr. Nilesh Choudhari";
+
     if (
       !diagnosis ||
-      !prescribed_by ||
+      !prescriber ||
       !Array.isArray(medications) ||
       !symptoms_or_reason
     ) {
@@ -39,7 +41,7 @@ exports.addPrescriptionToVisit = async (req, res, next) => {
         patient,
         visit_date: new Date(visit_date),
         symptoms_or_reason,
-        doctor_name: prescribed_by,
+        doctor_name: prescriber,
         diagnosis,
         notes,
         follow_up_date,
@@ -47,7 +49,7 @@ exports.addPrescriptionToVisit = async (req, res, next) => {
     } else {
       // Update existing visit with new information
       visit.symptoms_or_reason = symptoms_or_reason;
-      visit.doctor_name = prescribed_by;
+      visit.doctor_name = prescriber;
       visit.diagnosis = diagnosis;
       visit.notes = notes;
       visit.follow_up_date = follow_up_date;
@@ -60,7 +62,7 @@ exports.addPrescriptionToVisit = async (req, res, next) => {
       visit: visit._id,
       visit_date: new Date(visit_date),
       diagnosis,
-      prescribed_by,
+      prescribed_by: prescriber,
       medications,
       follow_up_date,
       notes,
@@ -111,18 +113,41 @@ exports.getPrescriptionById = async (req, res, next) => {
   }
 };
 
-// Update prescription status
+// Update prescription (status and details)
 exports.updatePrescriptionStatus = async (req, res, next) => {
   try {
     const prescriptionId = req.params.id;
-    const { prescription_status, medications } = req.body;
+    const {
+      prescription_status,
+      medications,
+      diagnosis,
+      prescribed_by,
+      follow_up_date,
+      notes,
+      visit_date,
+      symptoms_or_reason,
+    } = req.body;
 
-    const prescription = await Prescription.findById(prescriptionId);
+    const prescription = await Prescription.findById(prescriptionId).populate("visit");
     if (!prescription) {
       return responseHandler.generateError(res, "Prescription not found", null);
     }
 
-    if (prescription_status) {
+    // Validate required fields
+    if (diagnosis !== undefined && !diagnosis?.trim()) {
+      return responseHandler.generateError(res, "Diagnosis is required", null);
+    }
+
+    if (prescribed_by !== undefined && !prescribed_by?.trim()) {
+      return responseHandler.generateError(res, "Prescribed by is required", null);
+    }
+
+    if (medications !== undefined && (!Array.isArray(medications) || medications.length === 0)) {
+      return responseHandler.generateError(res, "At least one medication is required", null);
+    }
+
+    // Update prescription fields
+    if (prescription_status !== undefined) {
       prescription.prescription_status = prescription_status;
     }
 
@@ -130,9 +155,50 @@ exports.updatePrescriptionStatus = async (req, res, next) => {
       prescription.medications = medications;
     }
 
+    if (diagnosis !== undefined) {
+      prescription.diagnosis = diagnosis;
+    }
+
+    if (prescribed_by !== undefined) {
+      prescription.prescribed_by = prescribed_by;
+    }
+
+    if (follow_up_date !== undefined) {
+      prescription.follow_up_date = follow_up_date ? new Date(follow_up_date) : null;
+    }
+
+    if (notes !== undefined) {
+      prescription.notes = notes || "";
+    }
+
+    if (visit_date !== undefined) {
+      prescription.visit_date = visit_date ? new Date(visit_date) : prescription.visit_date;
+    }
+
     await prescription.save();
 
-    responseHandler.generateSuccess(res, "Prescription updated successfully", prescription);
+    // Keep visit details in sync where applicable
+    if (prescription.visit) {
+      if (diagnosis !== undefined) prescription.visit.diagnosis = diagnosis;
+      if (prescribed_by !== undefined) prescription.visit.doctor_name = prescribed_by;
+      if (follow_up_date !== undefined) {
+        prescription.visit.follow_up_date = follow_up_date ? new Date(follow_up_date) : null;
+      }
+      if (notes !== undefined) prescription.visit.notes = notes || "";
+      if (visit_date !== undefined) {
+        prescription.visit.visit_date = visit_date ? new Date(visit_date) : prescription.visit.visit_date;
+      }
+      if (symptoms_or_reason !== undefined) {
+        prescription.visit.symptoms_or_reason = symptoms_or_reason;
+      }
+      await prescription.visit.save();
+    }
+
+    const refreshed = await Prescription.findById(prescriptionId)
+      .populate("visit")
+      .populate("patient", "name unique_patient_id first_name last_name phone_number email");
+
+    responseHandler.generateSuccess(res, "Prescription updated successfully", refreshed);
   } catch (error) {
     responseHandler.generateError(res, "Failed to update prescription", error);
     next(error);

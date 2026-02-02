@@ -21,7 +21,8 @@ const prescriptionSchema = new mongoose.Schema(
     },
     prescribed_by: {
       type: String,
-      required: true,
+    required: true,
+    default: "Dr. Nilesh Choudhari",
     },
     medications: [
       {
