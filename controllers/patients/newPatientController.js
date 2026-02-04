@@ -31,14 +31,17 @@ exports.registerPatient = async (req, res, next) => {
       country: joi.string().allow("").optional(),
       state: joi.string().allow("").optional(),
       city: joi.string().allow("").optional(),
-      phone_number: joi.alternatives().try(joi.string().allow(""), joi.number()).optional(),
+      phone_number: joi
+        .alternatives()
+        .try(joi.string().allow(""), joi.number())
+        .optional(),
       health_issues_initial: joi
         .array()
         .items(
           joi.object().keys({
             label: joi.string().required(),
             group: joi.string().required(),
-          })
+          }),
         )
         .optional(),
       customHealthIssue: joi.string().allow("").optional(),
@@ -50,7 +53,7 @@ exports.registerPatient = async (req, res, next) => {
       return responseHandler.generateError(
         res,
         "Validation failed",
-        result.error
+        result.error,
       );
     }
 
@@ -70,7 +73,7 @@ exports.registerPatient = async (req, res, next) => {
     const unique_patient_id = `PAT-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const isOtherHealthIssueSelected = normalizedHealthIssues.some(
-      (issue) => issue.label === "Other"
+      (issue) => issue.label === "Other",
     );
 
     // Create new patient document
@@ -96,7 +99,7 @@ exports.registerPatient = async (req, res, next) => {
       res,
       "Registered successfully",
       { _id: newPatient._id },
-      201
+      201,
     );
   } catch (err) {
     next(err);
@@ -143,7 +146,7 @@ exports.getPatient = async (req, res, next) => {
     responseHandler.generateSuccess(
       res,
       "Patient fetched successfully",
-      patient
+      patient,
     );
   } catch (err) {
     responseHandler.generateError(res, "Error fetching patient", err, 500);
@@ -157,14 +160,14 @@ exports.updatePatient = async (req, res, next) => {
   try {
     await newPatientModel.updateOne(
       { _id: req.params.id },
-      { $set: updatedData }
+      { $set: updatedData },
     );
 
     responseHandler.generateSuccess(
       res,
       "Patient updated successfully",
       null,
-      200
+      200,
     );
   } catch (err) {
     responseHandler.generateError(res, "Error updating patient", err, 500);
@@ -172,18 +175,26 @@ exports.updatePatient = async (req, res, next) => {
   }
 };
 
-exports.deletePatient = async (req, res, next) => {
-  const patientId = req.params.patient;
+// Delete patient by ID
+exports.deletePatient = async (req, res) => {
   try {
-    const result = await newPatientModel.deleteOne({ _id: patientId });
+    const { id } = req.params;
 
-    if (result.deletedCount === 0) {
-      return responseHandler.generateError(res, "Patient not found", {}, 404);
+    const deleted = await newPatientModel.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Patient not found" });
     }
 
-    responseHandler.generateSuccess(res, "Patient deleted successfully");
-  } catch (err) {
-    responseHandler.generateError(res, "Error deleting patient", err);
-    next(err);
+    return res.status(200).json({
+      message: "Patient deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting patient:", error);
+
+    return res.status(500).json({
+      message: "Error deleting patient",
+      error: error.message,
+    });
   }
 };
