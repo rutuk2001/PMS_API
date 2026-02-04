@@ -14,15 +14,15 @@ router.post("/createNewPatient", jWtAuth, PatientController.registerPatient);
 router.get("/getAllPatients", jWtAuth, PatientController.getAllPatients);
 router.get("/getPatient/:id", jWtAuth, PatientController.getPatient);
 router.put("/updatePatient/:id", jWtAuth, PatientController.updatePatient);
-router.delete(
-  "/deletePatient/:patient",
-  jWtAuth,
-  PatientController.deletePatient
-);
+router.delete("/deletePatient/:id", jWtAuth, PatientController.deletePatient);
 
 // Visit History Routes
 router.post("/api/visits", jWtAuth, PatientVisitController.logVisit);
-router.get("/api/history/:id", jWtAuth, PatientVisitController.getVisitHistoryByPatient);
+router.get(
+  "/api/history/:id",
+  jWtAuth,
+  PatientVisitController.getVisitHistoryByPatient,
+);
 router.get("/api/visits/:id", jWtAuth, PatientVisitController.getVisitById);
 router.put("/api/visits/:id", jWtAuth, PatientVisitController.updateVisit);
 
@@ -30,9 +30,17 @@ router.put("/api/visits/:id", jWtAuth, PatientVisitController.updateVisit);
 router.put(
   "/visits/:id/prescription",
   jWtAuth,
-  PatientPrescriptionController.addPrescriptionToVisit
+  PatientPrescriptionController.addPrescriptionToVisit,
 );
-router.get("/api/prescriptions/:id", jWtAuth, PatientPrescriptionController.getPrescriptionById);
-router.put("/api/prescriptions/:id", jWtAuth, PatientPrescriptionController.updatePrescriptionStatus);
+router.get(
+  "/api/prescriptions/:id",
+  jWtAuth,
+  PatientPrescriptionController.getPrescriptionById,
+);
+router.put(
+  "/api/prescriptions/:id",
+  jWtAuth,
+  PatientPrescriptionController.updatePrescriptionStatus,
+);
 
 module.exports = router;
